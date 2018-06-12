@@ -75,14 +75,110 @@ module Etsy
         r.body.should == 'I am not JSON'
       end
 
-      should "raise an invalid JSON exception if the response is not json" do
-        raw_response = mock
-        raw_response.stubs(:body => "I am not JSON", :code => 500)
-        r = Response.new(raw_response)
+      context 'when response is not json' do
+        context 'when code is 500' do
+          should "raise a ServerError exception" do
+            raw_response = mock
+            raw_response.stubs(body: "Server Error", code: 500)
+            r = Response.new(raw_response)
 
-        exception = assert_raises(Etsy::EtsyJSONInvalid) { r.to_hash }
-        assert_equal( 500, exception.code )
-        assert_equal( "I am not JSON", exception.data )
+            exception = assert_raises(Etsy::ServerError) { r.to_hash }
+            assert_equal( 500, exception.code )
+            assert_equal( "Server Error", exception.data )
+          end
+        end
+
+        context 'when code is 409' do
+          context 'when the body states that resource is busy' do
+            should "raise a ResourceIsBusy exception" do
+              raw_response = mock
+              raw_response.stubs(body: "The resource is being edited by another process. Please try again in a few moments.", code: 409)
+              r = Response.new(raw_response)
+
+              exception = assert_raises(Etsy::ResourceIsBusy) { r.to_hash }
+              assert_equal(409, exception.code)
+              assert_equal("The resource is being edited by another process. Please try again in a few moments.", exception.data)
+            end
+          end
+        end
+
+        context 'when code is 400' do
+          context 'when body says that all quantities are zero' do
+            should "raise a AllQuantitiesAreZero exception" do
+              raw_response = mock
+              raw_response.stubs(body: "_object: All quantities are zero", code: 400)
+              r = Response.new(raw_response)
+
+              exception = assert_raises(Etsy::AllQuantitiesAreZero) { r.to_hash }
+              assert_equal(400, exception.code)
+              assert_equal("_object: All quantities are zero", exception.data)
+            end
+          end
+
+          context 'when body says that request cannot be recognized' do
+            should "raise a RequestCannotBeRecognized exception" do
+              raw_response = mock
+              raw_response.stubs(
+                body: "<HTML><HEAD> <TITLE>Bad Request</TITLE> </HEAD><BODY> <H1>Bad Request</H1> Your browser sent a request that this server could not understand.<P> Reference&#32;&#35;7&#46;87d408d1&#46;1528770128&#46;0 </BODY> </HTML>",
+                code: 400
+              )
+              r = Response.new(raw_response)
+
+              exception = assert_raises(Etsy::RequestCannotBeRecognized) { r.to_hash }
+              assert_equal(400, exception.code)
+              assert_equal(
+                "<HTML><HEAD> <TITLE>Bad Request</TITLE> </HEAD><BODY> <H1>Bad Request</H1> Your browser sent a request that this server could not understand.<P> Reference&#32;&#35;7&#46;87d408d1&#46;1528770128&#46;0 </BODY> </HTML>",
+                exception.data
+              )
+            end
+          end
+        end
+
+        context 'when code is 414' do
+          context 'when body states that URI too long' do
+            should "raise a UriTooLong exception" do
+              raw_response = mock
+              raw_response.stubs(body: "Error: URI Too Long", code: 414)
+              r = Response.new(raw_response)
+
+              exception = assert_raises(Etsy::UriTooLong) { r.to_hash }
+              assert_equal(414, exception.code)
+              assert_equal("Error: URI Too Long", exception.data)
+            end
+          end
+        end
+
+        context 'when code is 503' do
+          context 'when body states that operation is in progress' do
+            should "raise a OperationInProgress exception" do
+              raw_response = mock
+              raw_response.stubs(
+                body: "<?xml version=\"1.0\" encoding=\"utf-8\"?> <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\"> <html> <head> <title>503 Operation now in progress</title> </head> <body> <h1>Error 503 Operation now in progress</h1> <p>Operation now in progress</p> <h3>Guru Mediation:</h3> <p>Details: cache-iad2150-IAD 1528653727 3234964384</p> <hr> <p>Varnish cache server</p> </body> </html>",
+                code: 503
+              )
+              r = Response.new(raw_response)
+
+              exception = assert_raises(Etsy::OperationInProgress) { r.to_hash }
+              assert_equal(503, exception.code)
+              assert_equal(
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?> <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\"> <html> <head> <title>503 Operation now in progress</title> </head> <body> <h1>Error 503 Operation now in progress</h1> <p>Operation now in progress</p> <h3>Guru Mediation:</h3> <p>Details: cache-iad2150-IAD 1528653727 3234964384</p> <hr> <p>Varnish cache server</p> </body> </html>",
+                exception.data
+              )
+            end
+          end
+        end
+
+        context 'when response is unknown' do
+          should "raise an invalid JSON exception" do
+            raw_response = mock
+            raw_response.stubs(body: "I am not JSON", code: 515)
+            r = Response.new(raw_response)
+
+            exception = assert_raises(Etsy::EtsyJSONInvalid) { r.to_hash }
+            assert_equal(515, exception.code)
+            assert_equal("I am not JSON", exception.data)
+          end
+        end
       end
 
       should "raise OAuthTokenRevoked" do
