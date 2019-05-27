@@ -57,6 +57,19 @@ module Etsy
         r.result.should == %w(one two)
       end
 
+      should "return a hash even if there are multiple results, but inside a hash" do
+        raw_response = mock do |m|
+          body = '{"count": 1, "results": {"products": [{}, {}]}, "pagination": {}}'
+
+          m.stubs(:body).returns(body)
+        end
+
+        r = Response.new(raw_response)
+        r.expects(:code).returns('200')
+
+        r.result.should == { 'products' => [{}, {}] }
+      end
+
       should "return a single value for results if there is only 1 result" do
         r = Response.new('')
         r.expects(:code).with().returns('200')

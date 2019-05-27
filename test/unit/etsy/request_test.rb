@@ -183,6 +183,24 @@ module Etsy
         options.should == options_copy
       end
 
+      context "#put" do
+        should "pass params in the body and adds json content type headers" do
+          params = { a: 1 }
+          expected_params = params.merge(includes: [], api_key: nil)
+          headers = { 'Accept' => 'application/json', 'Content-Type' => 'application/json' }
+          response = mock
+
+          client = mock do |m|
+            m.expects(:put).with('/v2/user', expected_params, headers).returns(response)
+          end
+
+          r = Request.new('/user', params)
+          r.stubs(:client).returns(client)
+
+          r.put.should == response
+        end
+      end
+
     end
 
 

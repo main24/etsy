@@ -65,26 +65,26 @@ module Etsy
 
     # Fetch a raw response from the specified endpoint.
     #
-    def get(endpoint)
-      client.get(endpoint)
+    def get(endpoint, headers = {})
+      client.get(endpoint, headers)
     end
 
-    def post(endpoint)
-      client.post(endpoint)
+    def post(endpoint, body = '', headers = {})
+      client.post(endpoint, body, headers)
     end
 
-    def put(endpoint)
-      client.put(endpoint)
-    end
-    
-    def delete(endpoint)
-      client.delete(endpoint)
+    def put(endpoint, body = '', headers = {})
+      client.put(endpoint, body, headers)
     end
 
-    def post_multipart(endpoint, params = {})      
+    def delete(endpoint, headers = {})
+      client.delete(endpoint, headers)
+    end
+
+    def post_multipart(endpoint, params = {})
       client = Net::HTTP.new(Etsy.host, Etsy.protocol == "http" ? 80 : 443)
       client.use_ssl = true if Etsy.protocol == "https"
-      
+
       client.start do |http|
         req = Net::HTTP::Post.new(endpoint)
         add_multipart_data(req, params)

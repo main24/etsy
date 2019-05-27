@@ -8,6 +8,8 @@ module Etsy
 
     # Perform a GET request for the resource with optional parameters - returns
     # A Response object with the payload data
+    JSON_HEADERS = { 'Accept' => 'application/json', 'Content-Type' => 'application/json' }.freeze
+
     def self.get(resource_path, parameters = {})
       request = Request.new(resource_path, parameters)
       Response.new(request.get)
@@ -22,13 +24,11 @@ module Etsy
       request = Request.new(resource_path, parameters)
       Response.new(request.put)
     end
-    
+
     def self.delete(resource_path, parameters = {})
       request = Request.new(resource_path, parameters)
       Response.new(request.delete)
     end
-    
-    
 
     # Create a new request for the resource with optional parameters
     def initialize(resource_path, parameters = {})
@@ -73,9 +73,9 @@ module Etsy
     end
 
     def put
-      client.put(endpoint_url)
+      client.put(url, all_parameters, JSON_HEADERS)
     end
-    
+
     def delete
       client.delete(endpoint_url)
     end
@@ -93,7 +93,7 @@ module Etsy
     end
 
     def query # :nodoc:
-      to_url(parameters.merge(:includes => resources.to_a.map { |r| association(r) }))
+      to_url(all_parameters)
     end
 
     def to_url(val)
@@ -123,9 +123,7 @@ module Etsy
     end
 
     def endpoint_url(options = {}) # :nodoc:
-      url = "#{base_path}#{@resource_path}"
-      url += "?#{query}" if options.fetch(:include_query, true)
-      url
+      options.fetch(:include_query, true) ? "#{url}?#{query}" : url
     end
 
     def multipart?
@@ -133,6 +131,14 @@ module Etsy
     end
 
     private
+
+    def url
+      "#{base_path}#{@resource_path}"
+    end
+
+    def all_parameters
+      parameters.merge(includes: resources.to_a.map { |r| association(r) })
+    end
 
     def secure_client
       SecureClient.new(:access_token => @token, :access_secret => @secret)

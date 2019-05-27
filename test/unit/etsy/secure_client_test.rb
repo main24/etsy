@@ -114,11 +114,11 @@ module Etsy
         end
       end
 
-      should "delegate :get to :client" do
+      should "invoke client.get with empty headers" do
         url = 'http://etsy.com/'
 
         oauth_client = stub()
-        oauth_client.stubs(:get).with(url).returns('something')
+        oauth_client.stubs(:get).with(url, {}).returns('something')
 
         client = SecureClient.new
         client.stubs(:client).returns(oauth_client)

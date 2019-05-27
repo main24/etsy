@@ -36,8 +36,10 @@ module Etsy
 
     # Convert the raw JSON data to a hash
     def to_hash
-      validate!
-      @hash ||= json
+      @hash ||= begin
+        validate!
+        json
+      end
     end
 
     def body
@@ -61,7 +63,7 @@ module Etsy
     def result
       if success?
         results = to_hash['results'] || []
-        count == 1 ? results.first : results
+        count == 1 && results.is_a?(Array) ? results.first : results
       else
         Etsy.silent_errors ? [] : validate!
       end
