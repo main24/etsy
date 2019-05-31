@@ -15,6 +15,7 @@ module Etsy
   end
 
   class ServerError < EtsyJSONInvalid; end
+  class TemporaryServerError < EtsyJSONInvalid; end
   class ResourceIsBusy < EtsyJSONInvalid; end
   class AllQuantitiesAreZero < EtsyJSONInvalid; end
   class RequestCannotBeRecognized < EtsyJSONInvalid; end
@@ -103,6 +104,7 @@ module Etsy
 
     def invalid_json_class
       return ServerError if server_error?
+      return TemporaryServerError if temporary_server_error?
       return ResourceIsBusy if resource_is_busy?
       return AllQuantitiesAreZero if all_quantities_are_zero?
       return RequestCannotBeRecognized if request_cannot_be_recognized?
@@ -126,6 +128,14 @@ module Etsy
       # body: Server Error
       #
       code.to_s == '500'
+    end
+
+    def temporary_server_error?
+      #
+      # code: 502
+      # body: The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.
+      #
+      code.to_s == '502' && body =~ /The server encountered a temporary error/
     end
 
     def resource_is_busy?

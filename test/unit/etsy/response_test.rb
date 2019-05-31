@@ -87,6 +87,24 @@ module Etsy
           end
         end
 
+        context 'when code is 502 and exception message says that it is temporary server error' do
+          should "raise a TemporaryServerError exception" do
+            raw_response = mock
+            raw_response.stubs({
+              body: "<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"><title>502 Server Error</title></head><body text=#000000 bgcolor=#ffffff><h1>Error: Server Error</h1><h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2><h2></h2></body></html>",
+              code: 502
+            })
+            r = Response.new(raw_response)
+
+            exception = assert_raises(Etsy::TemporaryServerError) { r.to_hash }
+            assert_equal(502, exception.code)
+            assert_equal(
+              "<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"><title>502 Server Error</title></head><body text=#000000 bgcolor=#ffffff><h1>Error: Server Error</h1><h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2><h2></h2></body></html>",
+              exception.data
+            )
+          end
+        end
+
         context 'when code is 409' do
           context 'when the body states that resource is busy' do
             should "raise a ResourceIsBusy exception" do
