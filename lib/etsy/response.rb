@@ -20,6 +20,7 @@ module Etsy
   class RequestCannotBeRecognized < EtsyJSONInvalid; end
   class UriTooLong < EtsyJSONInvalid; end
   class OperationInProgress < EtsyJSONInvalid; end
+  class ShopNotFound < EtsyJSONInvalid; end
 
   # = Response
   #
@@ -107,6 +108,8 @@ module Etsy
       return RequestCannotBeRecognized if request_cannot_be_recognized?
       return UriTooLong if uri_too_long?
       return OperationInProgress if operation_in_progress?
+      return ShopNotFound if shop_not_found?
+
       EtsyJSONInvalid
     end
 
@@ -163,6 +166,14 @@ module Etsy
       # body: <?xml version="1.0" encoding="utf-8"?> <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> <html> <head> <title>503 Operation now in progress</title> </head> <body> <h1>Error 503 Operation now in progress</h1> <p>Operation now in progress</p> <h3>Guru Mediation:</h3> <p>Details: cache-iad2150-IAD 1528653727 3234964384</p> <hr> <p>Varnish cache server</p> </body> </html>
       #
       code.to_s == '503' && body =~ /Operation now in progress/i
+    end
+
+    def shop_not_found?
+      #
+      # code: 400
+      # body: Cannot update Shop because no Shop for shop_id XXXXX
+      #
+      code.to_s == '400' && body =~ /no Shop for shop_id/
     end
 
     def token_revoked?

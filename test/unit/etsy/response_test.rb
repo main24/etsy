@@ -4,10 +4,9 @@ module Etsy
   class ResponseTest < Test::Unit::TestCase
 
     context "An instance of the Response class" do
-      
       should "be able to return the total" do
         r = Response.new(stub(:body => '{ "count": 42 }'))
-        
+
         r.total.should == 42
       end
 
@@ -128,6 +127,24 @@ module Etsy
               assert_equal(400, exception.code)
               assert_equal(
                 "<HTML><HEAD> <TITLE>Bad Request</TITLE> </HEAD><BODY> <H1>Bad Request</H1> Your browser sent a request that this server could not understand.<P> Reference&#32;&#35;7&#46;87d408d1&#46;1528770128&#46;0 </BODY> </HTML>",
+                exception.data
+              )
+            end
+          end
+
+          context 'when body says that the shop with provided shop_id does not exist' do
+            should "raise a RequestCannotBeRecognized exception" do
+              raw_response = mock
+              raw_response.stubs(
+                body: "Cannot update Shop because no Shop for shop_id XXXXX",
+                code: 400
+              )
+              r = Response.new(raw_response)
+
+              exception = assert_raises(Etsy::ShopNotFound) { r.to_hash }
+              assert_equal(400, exception.code)
+              assert_equal(
+                "Cannot update Shop because no Shop for shop_id XXXXX",
                 exception.data
               )
             end
