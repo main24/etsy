@@ -5,6 +5,7 @@ module Etsy
   class TemporaryIssue < BaseEtsyException; end
   class ResourceUnavailable < TemporaryIssue; end
   class ExceededRateLimit < TemporaryIssue; end
+  class ExceededOverallRateLimit < ExceededRateLimit; end
   class InvalidUserID < BaseEtsyException; end
   class EtsyJSONInvalid < BaseEtsyException
     attr_reader :code, :data
@@ -97,20 +98,22 @@ module Etsy
       raise TemporaryIssue            if temporary_etsy_issue?
       raise ResourceUnavailable       if resource_unavailable?
       raise ExceededRateLimit         if exceeded_rate_limit?
+      raise ExceededOverallRateLimit  if exceeded_overall_limit?
+
       raise invalid_json_class.new({ code: code, data: data }) unless valid_json?
 
       true
     end
 
     def invalid_json_class
-      return ServerError if server_error?
-      return TemporaryServerError if temporary_server_error?
-      return ResourceIsBusy if resource_is_busy?
-      return AllQuantitiesAreZero if all_quantities_are_zero?
+      return ServerError               if server_error?
+      return TemporaryServerError      if temporary_server_error?
+      return ResourceIsBusy            if resource_is_busy?
+      return AllQuantitiesAreZero      if all_quantities_are_zero?
       return RequestCannotBeRecognized if request_cannot_be_recognized?
-      return UriTooLong if uri_too_long?
-      return OperationInProgress if operation_in_progress?
-      return ShopNotFound if shop_not_found?
+      return UriTooLong                if uri_too_long?
+      return OperationInProgress       if operation_in_progress?
+      return ShopNotFound              if shop_not_found?
 
       EtsyJSONInvalid
     end
@@ -208,6 +211,10 @@ module Etsy
 
     def exceeded_rate_limit?
       data =~ /You have exceeded/
+    end
+
+    def exceeded_overall_limit?
+      @raw_response.class.to_s == 'Net::HTTPTooManyRequests'
     end
   end
 end

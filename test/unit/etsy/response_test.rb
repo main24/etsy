@@ -203,6 +203,17 @@ module Etsy
           end
         end
 
+        context 'when code is 429' do
+          should "raise a ExceededOverallRateLimit exception" do
+            raw_response = Net::HTTPTooManyRequests.new('1.1', '429', 'Too Many Requests')
+            raw_response.stubs(body: '')
+            raw_response.body.stubs('closed?' => true)
+            r = Response.new(raw_response)
+
+            lambda { r.to_hash }.should raise_error(Etsy::ExceededOverallRateLimit)
+          end
+        end
+
         context 'when response is unknown' do
           should "raise an invalid JSON exception" do
             raw_response = mock
