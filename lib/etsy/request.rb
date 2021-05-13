@@ -104,7 +104,7 @@ module Etsy
           k.nil? || v.nil? || (k.respond_to?(:empty?) && k.empty?) || (v.respond_to?(:empty?) && v.empty?)
         }.map { |k, v| "#{to_url(k.to_s)}=#{to_url(v)}" }.join('&')
       else
-        URI.escape(val.to_s, Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))
+        URI::DEFAULT_PARSER.escape(val.to_s, Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))
       end
     end
 
