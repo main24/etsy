@@ -56,18 +56,28 @@ module Etsy
 
     # Number of records in the response results
     def count
-      if paginated?
-        to_hash['results'].nil? ? 0 : to_hash['results'].size
+      hashed = to_hash
+      if hashed.key?('results')
+        if paginated?
+          hashed['results'].nil? ? 0 : hashed['results'].size
+        else
+          hashed['count']
+        end
       else
-        to_hash['count']
+        hashed.any? ? 1 : 0
       end
     end
 
     # Results of the API request
     def result
       if success?
-        results = to_hash['results'] || []
-        count == 1 ? results.first : results
+        hashed = to_hash
+        if hashed.key?('results')
+          results = hashed['results'] || []
+          count == 1 ? results.first : results
+        else
+          hashed
+        end
       else
         Etsy.silent_errors ? [] : validate!
       end
@@ -83,7 +93,7 @@ module Etsy
     end
 
     def paginated?
-      !!to_hash['pagination']
+      !!to_hash['pagination'] || to_hash.key?('count')
     end
 
     private
