@@ -1,3 +1,5 @@
+require 'forwardable'
+
 module Etsy
 
   # = Request
@@ -5,146 +7,80 @@ module Etsy
   # A basic wrapper around GET requests to the Etsy JSON API
   #
   class Request
+    extend Forwardable
 
-    # Perform a GET request for the resource with optional parameters - returns
-    # A Response object with the payload data
-    def self.get(resource_path, parameters = {})
-      request = Request.new(resource_path, parameters)
-      Response.new(request.get)
+    class << self
+      # Perform a GET request for the resource with optional parameters - returns
+      # A Response object with the payload data
+      def get(resource_path, parameters = {})
+        request = Request.new(resource_path, parameters)
+        Response.new(request.get)
+      end
+
+      def post(resource_path, parameters = {})
+        request = Request.new(resource_path, parameters)
+        Response.new(request.post)
+      end
+
+      def put(resource_path, parameters = {})
+        request = Request.new(resource_path, parameters)
+        Response.new(request.put)
+      end
+
+      def delete(resource_path, parameters = {})
+        request = Request.new(resource_path, parameters)
+        Response.new(request.delete)
+      end
     end
 
-    def self.post(resource_path, parameters = {})
-      request = Request.new(resource_path, parameters)
-      Response.new(request.post)
-    end
-
-    def self.put(resource_path, parameters = {})
-      request = Request.new(resource_path, parameters)
-      Response.new(request.put)
-    end
-    
-    def self.delete(resource_path, parameters = {})
-      request = Request.new(resource_path, parameters)
-      Response.new(request.delete)
-    end
-    
-    
+    API_VERSIONS = [
+      (API_VERSION_2 = 'v2'),
+      (API_VERSION_3 = 'v3')
+    ].freeze
+    DEFAULT_API_VERSION = API_VERSION_2
 
     # Create a new request for the resource with optional parameters
     def initialize(resource_path, parameters = {})
-      parameters = parameters.dup
-      @token = parameters.delete(:access_token) || Etsy.credentials[:access_token]
-      @secret = parameters.delete(:access_secret) || Etsy.credentials[:access_secret]
-      raise("Secure connection required. Please provide your OAuth credentials via :access_token and :access_secret in the parameters") if parameters.delete(:require_secure) && !secure?
-      @multipart_request = parameters.delete(:multipart)
-      @resource_path = resource_path
-      @resources = parameters.delete(:includes)
-      if @resources.class == String
-        @resources = @resources.split(',').map {|r| {:resource => r}}
-      elsif @resources.class == Array
-        @resources = @resources.map do |r|
-          if r.class == String
-            {:resource => r}
-          else
-            r
-          end
-        end
-      end
-      parameters = parameters.merge(:api_key => Etsy.api_key) unless secure?
-      @parameters = parameters
+      initialize_request_object(resource_path, parameters)
     end
+    attr_reader :request_object
 
-    def base_path # :nodoc:
-      "/v2"
-    end
-
-    # Perform a GET request against the API endpoint and return the raw
-    # response data
-    def get
-      client.get(endpoint_url)
-    end
-
-    def post
-      if multipart?
-        client.post_multipart(endpoint_url(:include_query => false), @parameters)
-      else
-        client.post(endpoint_url)
-      end
-    end
-
-    def put
-      client.put(endpoint_url(include_query: false), query)
-    end
-    
-    def delete
-      client.delete(endpoint_url)
-    end
-
-    def client # :nodoc:
-      @client ||= secure? ? secure_client : basic_client
-    end
-
-    def parameters # :nodoc:
-      @parameters
-    end
-
-    def resources # :nodoc:
-      @resources
-    end
-
-    def query # :nodoc:
-      to_url(parameters.merge(:includes => resources.to_a.map { |r| association(r) }))
-    end
-
-    def to_url(val)
-      if val.is_a? Array
-        to_url(val.join(','))
-      elsif val.is_a? Hash
-        val.reject { |k, v|
-          k.nil? || v.nil? || (k.respond_to?(:empty?) && k.empty?) || (v.respond_to?(:empty?) && v.empty?)
-        }.map { |k, v| "#{to_url(k.to_s)}=#{to_url(v)}" }.join('&')
-      else
-        URI::DEFAULT_PARSER.escape(val.to_s, Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))
-      end
-    end
-
-    def association(options={}) # :nodoc:
-      s = options[:resource].dup
-
-      if options.include? :fields
-        s << "(#{[options[:fields]].flatten.join(',')})"
-      end
-
-      if options.include?(:limit) || options.include?(:offset)
-        s << ":#{options.fetch(:limit, 25)}:#{options.fetch(:offset, 0)}"
-      end
-
-      s
-    end
-
-    def endpoint_url(options = {}) # :nodoc:
-      url = "#{base_path}#{@resource_path}"
-      url += "?#{query}" if options.fetch(:include_query, true)
-      url
-    end
-
-    def multipart?
-      !!@multipart_request
-    end
+    def_delegators :@request_object,
+                   :get,
+                   :base_path,
+                   :post,
+                   :put,
+                   :delete,
+                   :client,
+                   :query,
+                   :to_url,
+                   :association,
+                   :endpoint_url,
+                   :multipart?,
+                   :token,
+                   :secret,
+                   :multipart_request,
+                   :resource_path,
+                   :resources,
+                   :parameters
 
     private
 
-    def secure_client
-      SecureClient.new(:access_token => @token, :access_secret => @secret)
+    def initialize_request_object(resource_path, parameters)
+      api_version = get_api_version(parameters.delete(:api_version))
+
+      @request_object ||=
+        api_version == API_VERSION_2 ?
+          Etsy::V2::Request.new(resource_path, parameters) :
+          Etsy::V3::Request.new(resource_path, parameters)
     end
 
-    def basic_client
-      BasicClient.new
+    def get_api_version(passed_api_version)
+      if passed_api_version.nil? || !API_VERSIONS.include?(passed_api_version)
+        DEFAULT_API_VERSION
+      else
+        passed_api_version
+      end
     end
-
-    def secure?
-      !@token.nil? && !@secret.nil?
-    end
-
   end
 end

@@ -42,4 +42,19 @@ class Test::Unit::TestCase
     objects
   end
 
+  def with_etsy_app_keys(api_key:, api_secret:, user_agent: nil)
+    original_api_key    = Etsy.api_key
+    original_api_secret = Etsy.api_secret
+    original_user_agent = Etsy.user_agent
+
+    Etsy.api_key    = 'api_key_X'
+    Etsy.api_secret = 'api_secret_X'
+    Etsy.user_agent = user_agent || original_user_agent
+
+    yield
+
+    Etsy.api_key    = original_api_key
+    Etsy.api_secret = original_api_secret
+    Etsy.user_agent = original_user_agent
+  end
 end

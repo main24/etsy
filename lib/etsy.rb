@@ -3,8 +3,12 @@ $:.unshift File.dirname(__FILE__)
 require 'net/http'
 require 'json'
 require 'oauth'
+require 'oauth2'
 require 'uri'
 
+require 'etsy/base_request'
+require 'etsy/v2/request'
+require 'etsy/v3/request'
 require 'etsy/request'
 require 'etsy/response'
 
@@ -121,6 +125,10 @@ module Etsy
     @silent_errors = bool
   end
 
+  def self.user_agent=(user_agent)
+    @user_agent ||= user_agent
+  end
+
   def self.protocol
     @protocol || "https"
   end
@@ -135,6 +143,10 @@ module Etsy
   #
   def self.silent_errors
     @silent_errors.nil? ? true : @silent_errors
+  end
+
+  def self.user_agent
+    @user_agent
   end
 
   def self.host # :nodoc:

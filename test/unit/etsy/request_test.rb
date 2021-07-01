@@ -25,9 +25,26 @@ module Etsy
     end
 
     context "An instance of the Request class" do
-
       should "know the base path" do
-        Request.new('').base_path.should == '/v2'
+        request = Request.new('')
+        request.base_path.should == '/v2'
+        request.request_object.class.should == Etsy::V2::Request
+
+        request = Request.new('', { api_version: 'v2' })
+        request.base_path.should == '/v2'
+        request.request_object.class.should == Etsy::V2::Request
+
+        request = Request.new('', { api_version: 'v4' })
+        request.base_path.should == '/v2'
+        request.request_object.class.should == Etsy::V2::Request
+
+        request = Request.new('', { api_version: nil })
+        request.base_path.should == '/v2'
+        request.request_object.class.should == Etsy::V2::Request
+
+        request = Request.new('', { api_version: 'v3' })
+        request.base_path.should == '/v3/application'
+        request.request_object.class.should == Etsy::V3::Request
       end
 
       should "append the api_key to the parameters in basic mode" do
@@ -45,10 +62,9 @@ module Etsy
         r.parameters.should == {:limit => '1'}
       end
 
-
       should "be able to generate query parameters" do
         r = Request.new('/user')
-        r.expects(:parameters).with().returns(:api_key => 'foo')
+        r.request_object.expects(:parameters).with().returns(:api_key => 'foo')
         r.query.should == 'api_key=foo'
       end
 
@@ -56,20 +72,20 @@ module Etsy
         params = {:limit => '1', :other => 'yes'}
 
         r = Request.new('/user', params)
-        r.stubs(:parameters).with().returns(params)
+        r.request_object.stubs(:parameters).with().returns(params)
 
         r.query.split('&').sort.should == %w(limit=1 other=yes)
       end
 
       should "be able to request a single association" do
         r = Request.new('/foo', {:includes => 'Thunder'})
-        r.stubs(:parameters).with().returns({:a => :b})
+        r.request_object.stubs(:parameters).with().returns({:a => :b})
         CGI.parse(r.query).should == { "a" => ["b"], "includes" => ["Thunder"] }
       end
 
       should "be able make simplified association requests" do
         r = Request.new('/foo', {:includes => ['Thunder', 'Lightning']})
-        r.stubs(:parameters).with().returns({:a => :b})
+        r.request_object.stubs(:parameters).with().returns({:a => :b})
         CGI.parse(r.query).should == { "a" => ["b"], "includes" => ["Thunder,Lightning"] }
       end
 
@@ -105,8 +121,8 @@ module Etsy
           ]
         }
         r = Request.new('/foo', params)
-        r.stubs(:base_path).with().returns('/base')
-        r.stubs(:parameters).with().returns(:a => 'b')
+        r.request_object.stubs(:base_path).with().returns('/base')
+        r.request_object.stubs(:parameters).with().returns(:a => 'b')
         uri = URI.parse(r.endpoint_url)
         uri.path.should == '/base/foo'
         CGI.parse(uri.query).should == { "a" => ["b"], "includes" => ["Lightning,Thunder"] }
@@ -114,8 +130,8 @@ module Etsy
 
       should "be able to determine the endpoint URI when in read-only mode" do
         r = Request.new('/user')
-        r.stubs(:base_path).with().returns('/base')
-        r.stubs(:query).with().returns('a=b')
+        r.request_object.stubs(:base_path).with().returns('/base')
+        r.request_object.stubs(:query).with().returns('a=b')
 
         r.endpoint_url.should == '/base/user?a=b'
       end
@@ -124,8 +140,8 @@ module Etsy
         Etsy.stubs(:access_mode).returns(:authenticated)
 
         r = Request.new('/user', :access_token => 'toke', :access_secret => 'secret')
-        r.stubs(:base_path).with().returns('/base')
-        r.stubs(:query).with().returns('a=b')
+        r.request_object.stubs(:base_path).with().returns('/base')
+        r.request_object.stubs(:query).with().returns('a=b')
 
         r.endpoint_url.should == '/base/user?a=b'
       end
@@ -159,12 +175,14 @@ module Etsy
       end
 
       should "be able to make a successful request" do
-        client = stub()
-        client.stubs(:get).with('endpoint_url').returns('response')
+        r = Request.new('/')
+        r.request_object.stubs(:endpoint_url).with().returns('endpoint_url')
 
-        r = Request.new('/user')
-        r.stubs(:endpoint_url).with().returns('endpoint_url')
-        r.stubs(:client).returns(client)
+        client = r.request_object.client
+        client
+          .stubs(:get)
+          .with('endpoint_url')
+          .returns('response')
 
         r.get.should == 'response'
       end

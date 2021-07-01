@@ -34,6 +34,7 @@ module Etsy
     def initialize(raw_response)
       @raw_response = raw_response
     end
+    attr_reader :raw_response
 
     # Convert the raw JSON data to a hash
     def to_hash
@@ -46,7 +47,11 @@ module Etsy
     end
 
     def code
-      @raw_response.code
+      if @raw_response.respond_to?(:status)
+        @raw_response.status.to_s
+      else
+        @raw_response.code
+      end
     end
 
     # Number of records in the response results
