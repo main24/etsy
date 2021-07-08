@@ -5,6 +5,7 @@ require 'json'
 require 'oauth'
 require 'oauth2'
 require 'uri'
+require 'faraday_middleware'
 
 require 'etsy/base_request'
 require 'etsy/v2/request'
