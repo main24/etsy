@@ -41,10 +41,14 @@ module Etsy
 
       private
 
+      def default_oauth_client_options
+        { raise_errors: false }
+      end
+
       def oauth_client
         options = { site: "#{Etsy.protocol}://#{Etsy.host}/#{BASE_PATH.delete_prefix('/')}" }
         options.merge!(connection_opts: { headers: { 'User-Agent' => Etsy.user_agent } }) if Etsy.user_agent
-        options.merge!(oauth_client_options)
+        options.merge!(default_oauth_client_options.merge(oauth_client_options))
 
         OAuth2::Client.new(
           Etsy.api_key,

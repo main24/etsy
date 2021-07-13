@@ -214,6 +214,33 @@ module Etsy
         end
 
         context 'oauth client options' do
+          should 'have default options' do
+            with_etsy_app_keys(api_key: 'api_key_X', api_secret: 'api_secret_X', user_agent: 'TestApp') do
+              expected_options = {
+                token_url: '/oauth/token',
+                authorize_url: '/oauth/authorize',
+                max_redirects: 5,
+                token_method: :post,
+                raise_errors: false,
+                connection_opts: { headers: { 'User-Agent' => 'TestApp' } }
+              }
+
+              request =
+                Etsy::V3::Request.new(
+                  '/path',
+                  {
+                    access_token: 'client_token'
+                  }
+                )
+
+              request.client.client.options
+                .slice(:token_url, :authorize_url, :max_redirects, :token_method, :raise_errors, :connection_opts)
+                .should == expected_options
+
+              request.client.client.site.should == 'https://openapi.etsy.com/v3/application'
+            end
+          end
+
           should 'be re-defined via oauth_client_options' do
             with_etsy_app_keys(api_key: 'api_key_X', api_secret: 'api_secret_X', user_agent: 'TestApp') do
               expected_options = {
@@ -221,7 +248,7 @@ module Etsy
                 authorize_url: '/v3/authorize',
                 max_redirects: 1,
                 token_method: :get,
-                raise_errors: false,
+                raise_errors: true,
                 site: 'https://yet-another-site.com',
                 connection_opts: { headers: { 'User-Agent' => 'one-off-user-agent' } }
               }
