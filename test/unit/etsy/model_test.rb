@@ -9,7 +9,7 @@ module Etsy
 
     def mock_empty_request(options = {})
       body = options.delete(:body) { '{}' }
-      Request.expects(:new).with('', options).returns(stub(:get => stub(:body => body, :code => 200)))
+      Request.expects(:new).with('', options).returns(stub(:get => stub(:body => body, :code => 200), :api_version => 'v2'))
     end
 
     context 'An instance of a Model' do

@@ -13,9 +13,16 @@ require File.expand_path('../../lib/etsy', __FILE__)
 
 class Test::Unit::TestCase
 
+  def file(filename)
+    File.dirname(__FILE__) + "/fixtures/#{filename}"
+  end
+
   def raw_fixture_data(filename)
-    file = File.dirname(__FILE__) + "/fixtures/#{filename}"
-    File.read(file)
+    File.read(file(filename))
+  end
+
+  def raw_json_fixture_data(filename)
+    JSON.load_file(file(filename)).to_json
   end
 
   def read_fixture(filename)
@@ -27,7 +34,7 @@ class Test::Unit::TestCase
     underscored_fixture_filename = "#{resource.gsub(/([^^])([A-Z])/, '\1_\2').downcase}/#{file}"
     response_data = raw_fixture_data(underscored_fixture_filename)
 
-    Etsy::Request.stubs(:new).with(endpoint, options).returns(stub(:get => stub(:body => response_data, :code => '200')))
+    Etsy::Request.stubs(:new).with(endpoint, options).returns(stub(:get => stub(:body => response_data, :code => '200'), :api_version => 'v2'))
 
     JSON.parse(response_data)['results'].each_with_index do |result, index|
       object = "#{resource.downcase}_#{index}"

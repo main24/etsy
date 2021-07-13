@@ -14,22 +14,22 @@ module Etsy
       # A Response object with the payload data
       def get(resource_path, parameters = {})
         request = Request.new(resource_path, parameters)
-        Response.new(request.get)
+        Response.call(request.get, api_version: request.api_version)
       end
 
       def post(resource_path, parameters = {})
         request = Request.new(resource_path, parameters)
-        Response.new(request.post)
+        Response.call(request.post, api_version: request.api_version)
       end
 
       def put(resource_path, parameters = {})
         request = Request.new(resource_path, parameters)
-        Response.new(request.put)
+        Response.call(request.put, api_version: request.api_version)
       end
 
       def delete(resource_path, parameters = {})
         request = Request.new(resource_path, parameters)
-        Response.new(request.delete)
+        Response.call(request.delete, api_version: request.api_version)
       end
     end
 
@@ -41,9 +41,12 @@ module Etsy
 
     # Create a new request for the resource with optional parameters
     def initialize(resource_path, parameters = {})
+      @api_version = get_api_version(parameters.delete(:api_version))
+
       initialize_request_object(resource_path, parameters)
     end
-    attr_reader :request_object
+    attr_reader :request_object,
+                :api_version
 
     def_delegators :@request_object,
                    :get,
@@ -67,8 +70,6 @@ module Etsy
     private
 
     def initialize_request_object(resource_path, parameters)
-      api_version = get_api_version(parameters.delete(:api_version))
-
       @request_object ||=
         api_version == API_VERSION_2 ?
           Etsy::V2::Request.new(resource_path, parameters) :

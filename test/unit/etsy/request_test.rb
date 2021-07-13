@@ -5,16 +5,37 @@ module Etsy
 
     context "The Request class" do
 
-      should "be able to retrieve a response" do
+      should "be able to retrieve a V2 response" do
         http_response = stub()
         response      = stub()
 
-        Response.expects(:new).with(http_response).returns(response)
+        V2::Response.expects(:new).with(http_response).returns(response)
 
-        request = mock {|m| m.expects(:get).with().returns(http_response) }
+        request = mock do |m|
+          m.expects(:get).with().returns(http_response)
+          m.expects(:api_version).with().returns('v2')
+        end
+
         Request.expects(:new).with('/user', :one => 'two').returns(request)
 
         Request.get('/user', :one => 'two').should == response
+      end
+
+      should "be able to retrieve a V3 response" do
+        http_response  = stub()
+        response       = stub()
+        request_params = { :one => 'two', :api_version => 'v3' }
+
+        V3::Response.expects(:new).with(http_response).returns(response)
+
+        request = mock do |m|
+          m.expects(:get).with().returns(http_response)
+          m.expects(:api_version).with().returns('v3')
+        end
+
+        Request.expects(:new).with('/user', request_params).returns(request)
+
+        Request.get('/user', request_params).should == response
       end
 
       should "require OAuth credentials if :require_secure is set" do
