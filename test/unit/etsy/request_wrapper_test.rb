@@ -38,7 +38,7 @@ module Etsy
                   .merge(v2_request_params)
               )
 
-            request.request_object.parameters.should == v3_request_params
+            request.request_object.parameters.should == v3_request_params.merge(v2_request_params.slice(:includes))
           end
         end
       end

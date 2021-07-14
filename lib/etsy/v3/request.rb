@@ -15,6 +15,7 @@ module Etsy
         super
 
         @parameters.delete(:fields) # V2 request parameter
+        @parameters.merge!(includes: @passed_resources) if @passed_resources
       end
       attr_reader :oauth_client_options,
                   :oauth_token_options
