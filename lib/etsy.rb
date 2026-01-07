@@ -99,6 +99,15 @@ module Etsy
     Thread.current[:etsy_api_secret] = secret
   end
 
+  def self.shared_secret
+    Thread.current[:etsy_shared_secret] || @shared_secret
+  end
+
+  def self.shared_secret=(secret)
+    @shared_secret = secret
+    Thread.current[:etsy_shared_secret] = secret
+  end
+
   SANDBOX_HOST = 'sandbox.openapi.etsy.com'
   PRODUCTION_HOST = 'openapi.etsy.com'
 

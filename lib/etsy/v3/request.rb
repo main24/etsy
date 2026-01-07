@@ -69,7 +69,8 @@ module Etsy
       end
 
       def api_key_header
-        { 'x-api-key' => Etsy.api_key }
+        api_key_value = Etsy.shared_secret ? "#{Etsy.api_key}:#{Etsy.shared_secret}" : Etsy.api_key
+        { 'x-api-key' => api_key_value }
       end
     end
   end

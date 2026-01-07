@@ -11,6 +11,7 @@ class EtsyTest < Test::Unit::TestCase
       Etsy.instance_variable_set(:@host, nil)
       Etsy.instance_variable_set(:@api_key, nil)
       Etsy.instance_variable_set(:@api_secret, nil)
+      Etsy.instance_variable_set(:@shared_secret, nil)
       Etsy.instance_variable_set(:@permission_scopes, nil)
       Etsy.instance_variable_set(:@silent_errors, nil)
     end
@@ -55,7 +56,27 @@ class EtsyTest < Test::Unit::TestCase
       end.join
     end
 
-    should "be able to find a user by username" do
+    should "be able to set and retrieve the shared secret" do
+      Etsy.shared_secret = 'shared_secret'
+      Etsy.shared_secret.should == 'shared_secret'
+    end
+
+    should "be able to set and retrieve the shared secret across threads (global)" do
+      Etsy.shared_secret = 'shared_secret'
+      Thread.new do
+        Etsy.shared_secret.should == 'shared_secret'
+      end.join
+    end
+
+    should "be able to set and retrieve the shared secret inside a thread (thread local)" do
+      Etsy.shared_secret = 'shared_secret'
+      Thread.new do
+        Etsy.shared_secret = 'thread_local_shared_secret'
+        Etsy.shared_secret.should == 'thread_local_shared_secret'
+      end.join
+    end
+
+    should 'be able to find a user by username' do
       user = stub()
 
       Etsy::User.expects(:find).with('littletjane').returns(user)
